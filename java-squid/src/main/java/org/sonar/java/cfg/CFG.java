@@ -24,9 +24,12 @@ import com.google.common.collect.Lists;
 import org.sonar.java.model.JavaTree;
 import org.sonar.plugins.java.api.tree.BinaryExpressionTree;
 import org.sonar.plugins.java.api.tree.BlockTree;
+import org.sonar.plugins.java.api.tree.ExpressionStatementTree;
+import org.sonar.plugins.java.api.tree.ExpressionTree;
 import org.sonar.plugins.java.api.tree.IdentifierTree;
 import org.sonar.plugins.java.api.tree.IfStatementTree;
 import org.sonar.plugins.java.api.tree.LiteralTree;
+import org.sonar.plugins.java.api.tree.MethodInvocationTree;
 import org.sonar.plugins.java.api.tree.MethodTree;
 import org.sonar.plugins.java.api.tree.ParenthesizedTree;
 import org.sonar.plugins.java.api.tree.StatementTree;
@@ -94,9 +97,19 @@ public class CFG {
   private void build(Tree tree) {
     switch (((JavaTree) tree).getKind()) {
       case BLOCK:
-        currentBlock.elements.add(tree);
         for (StatementTree statementTree : Lists.reverse(((BlockTree) tree).body())) {
           build(statementTree);
+        }
+        break;
+      case EXPRESSION_STATEMENT:
+        build(((ExpressionStatementTree) tree).expression());
+        break;
+      case METHOD_INVOCATION:
+        MethodInvocationTree mit = (MethodInvocationTree) tree;
+        currentBlock.elements.add(mit);
+        build(mit.methodSelect());
+        for (ExpressionTree arg : Lists.reverse(mit.arguments())) {
+          build(arg);
         }
         break;
       case IF_STATEMENT:
