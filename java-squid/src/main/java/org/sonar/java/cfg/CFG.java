@@ -31,6 +31,7 @@ import org.sonar.plugins.java.api.tree.MethodTree;
 import org.sonar.plugins.java.api.tree.ParenthesizedTree;
 import org.sonar.plugins.java.api.tree.StatementTree;
 import org.sonar.plugins.java.api.tree.Tree;
+import org.sonar.plugins.java.api.tree.VariableTree;
 
 import java.io.PrintStream;
 import java.util.ArrayList;
@@ -120,6 +121,13 @@ public class CFG {
         currentBlock = createBranch(ifStatementTree, thenBlock, elseBlock);
         buildCondition(ifStatementTree.condition(), thenBlock, elseBlock);
         break;
+      case VARIABLE:
+        currentBlock.elements.add(tree);
+        VariableTree variableTree = (VariableTree) tree;
+        if(variableTree.initializer() != null) {
+          build(variableTree.initializer());
+        }
+      break;
     }
 
   }

@@ -51,6 +51,14 @@ public class CFGTest {
   }
 
   @Test
+  public void cfg_local_variable() throws Exception {
+    CFG cfg = buildCFG("void fun() {Object o;}");
+    assertThat(cfg.blocks).hasSize(2);
+    assertThat(cfg.blocks.get(0).elements).isEmpty();
+    assertThat(cfg.blocks.get(1).elements).hasSize(1);
+  }
+
+  @Test
   public void cfg_if_statement() throws Exception {
     CFG cfg = buildCFG("void fun() {if(a) { foo(); } }");
     assertThat(cfg.blocks).hasSize(4);
