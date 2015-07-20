@@ -46,14 +46,22 @@ public class CFG {
    */
   final List<Block> blocks = new ArrayList<>();
 
-  static class Block {
-    final int id;
+  public Block entry() {
+    return currentBlock;
+  }
+
+  public static class Block {
+    public final int id;
     final List<Tree> elements = new ArrayList<>();
-    List<Block> successors = Lists.newArrayList();
-    Tree terminator;
+    public List<Block> successors = Lists.newArrayList();
+    public Tree terminator;
 
     public Block(int id) {
       this.id = id;
+    }
+
+    public List<Tree> elements() {
+      return Lists.reverse(elements);
     }
   }
 
