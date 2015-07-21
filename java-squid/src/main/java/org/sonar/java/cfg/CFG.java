@@ -140,6 +140,13 @@ public class CFG {
         if(variableTree.initializer() != null) {
           build(variableTree.initializer());
         }
+        break;
+      case EQUAL_TO:
+      case NOT_EQUAL_TO:
+        BinaryExpressionTree binaryExpressionTree = (BinaryExpressionTree) tree;
+        currentBlock.elements.add(tree);
+        build(binaryExpressionTree.rightOperand());
+        build(binaryExpressionTree.leftOperand());
       break;
     }
 
