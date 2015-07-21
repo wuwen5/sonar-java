@@ -22,6 +22,7 @@ package org.sonar.java.cfg;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import org.sonar.java.model.JavaTree;
+import org.sonar.plugins.java.api.tree.AssignmentExpressionTree;
 import org.sonar.plugins.java.api.tree.BinaryExpressionTree;
 import org.sonar.plugins.java.api.tree.BlockTree;
 import org.sonar.plugins.java.api.tree.ExpressionStatementTree;
@@ -148,6 +149,11 @@ public class CFG {
         build(binaryExpressionTree.rightOperand());
         build(binaryExpressionTree.leftOperand());
       break;
+      case ASSIGNMENT:
+        AssignmentExpressionTree assignmentExpressionTree = (AssignmentExpressionTree) tree;
+        currentBlock.elements.add(tree);
+        build(assignmentExpressionTree.expression());
+        break;
     }
 
   }
