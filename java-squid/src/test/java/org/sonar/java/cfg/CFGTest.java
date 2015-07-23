@@ -66,7 +66,7 @@ public class CFGTest {
     assertThat(successors(cfg.blocks.get(2))).containsOnly(1);
     assertThat(successors(cfg.blocks.get(3))).containsOnly(1, 2);
     assertThat(cfg.blocks.get(3).terminator).isNotNull();
-    assertThat(cfg.blocks.get(3).elements).isEmpty();
+    assertThat(cfg.blocks.get(3).elements).hasSize(1);
     assertThat(cfg.blocks.get(3).terminator.is(Tree.Kind.IF_STATEMENT)).isTrue();
 
     cfg = buildCFG("void fun() {if(a) { foo(); } else { bar(); } }");
@@ -76,9 +76,9 @@ public class CFGTest {
     assertThat(successors(cfg.blocks.get(3))).containsOnly(1);
     assertThat(successors(cfg.blocks.get(4))).containsOnly(2, 3);
     assertThat(cfg.blocks.get(4).terminator).isNotNull();
-    assertThat(cfg.blocks.get(4).elements).isEmpty();
-    assertThat(cfg.blocks.get(3).elements).hasSize(1);
-    assertThat(cfg.blocks.get(2).elements).hasSize(1);
+    assertThat(cfg.blocks.get(4).elements).hasSize(1);
+    assertThat(cfg.blocks.get(3).elements).hasSize(2);
+    assertThat(cfg.blocks.get(2).elements).hasSize(2);
     assertThat(cfg.blocks.get(4).terminator.is(Tree.Kind.IF_STATEMENT)).isTrue();
 
     cfg = buildCFG("void fun() {\nif(a) {\n foo(); \n } else if(b) {\n bar();\n } }");

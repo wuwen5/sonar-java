@@ -30,6 +30,7 @@ import org.sonar.plugins.java.api.tree.ExpressionTree;
 import org.sonar.plugins.java.api.tree.IdentifierTree;
 import org.sonar.plugins.java.api.tree.IfStatementTree;
 import org.sonar.plugins.java.api.tree.LiteralTree;
+import org.sonar.plugins.java.api.tree.MemberSelectExpressionTree;
 import org.sonar.plugins.java.api.tree.MethodInvocationTree;
 import org.sonar.plugins.java.api.tree.MethodTree;
 import org.sonar.plugins.java.api.tree.ParenthesizedTree;
@@ -153,6 +154,14 @@ public class CFG {
         AssignmentExpressionTree assignmentExpressionTree = (AssignmentExpressionTree) tree;
         currentBlock.elements.add(tree);
         build(assignmentExpressionTree.expression());
+        break;
+      case MEMBER_SELECT:
+        MemberSelectExpressionTree mse = (MemberSelectExpressionTree) tree;
+        currentBlock.elements.add(mse);
+        build(mse.expression());
+        break;
+      case IDENTIFIER:
+        currentBlock.elements.add(tree);
         break;
     }
 
