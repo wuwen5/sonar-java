@@ -21,7 +21,6 @@ package org.sonar.java.cfg;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
-import org.sonar.java.model.JavaTree;
 import org.sonar.plugins.java.api.tree.AssignmentExpressionTree;
 import org.sonar.plugins.java.api.tree.BinaryExpressionTree;
 import org.sonar.plugins.java.api.tree.BlockTree;
@@ -97,7 +96,7 @@ public class CFG {
   }
 
   private void build(Tree tree) {
-    switch (((JavaTree) tree).getKind()) {
+    switch (tree.kind()) {
       case BLOCK:
         for (StatementTree statementTree : Lists.reverse(((BlockTree) tree).body())) {
           build(statementTree);
@@ -168,7 +167,7 @@ public class CFG {
   }
 
   private void buildCondition(Tree syntaxNode, Block trueBlock, Block falseBlock) {
-    switch (((JavaTree) syntaxNode).getKind()) {
+    switch (syntaxNode.kind()) {
       case CONDITIONAL_OR: {
         BinaryExpressionTree e = (BinaryExpressionTree) syntaxNode;
         // process RHS
@@ -215,12 +214,12 @@ public class CFG {
         out.println("B" + block.id + " (Exit) :");
       }
       int i = 0;
-      for (Tree tree : block.elements) {
-        out.println("  " + i + ": " + syntaxNodeToDebugString((JavaTree) tree));
+      for (Tree tree : block.elements()) {
+        out.println("  " + i + ": " + syntaxNodeToDebugString(tree));
         i++;
       }
       if (block.terminator != null) {
-        out.println("  T: " + syntaxNodeToDebugString((JavaTree) block.terminator));
+        out.println("  T: " + syntaxNodeToDebugString(block.terminator));
       }
       if (!block.successors.isEmpty()) {
         out.print("  Successors:");
@@ -233,10 +232,10 @@ public class CFG {
     out.println();
   }
 
-  private static String syntaxNodeToDebugString(JavaTree syntaxNode) {
-    StringBuilder sb = new StringBuilder(syntaxNode.getKind().name())
+  private static String syntaxNodeToDebugString(Tree syntaxNode) {
+    StringBuilder sb = new StringBuilder(syntaxNode.kind().name())
       .append(' ').append(Integer.toHexString(syntaxNode.hashCode()));
-    switch (syntaxNode.getKind()) {
+    switch (syntaxNode.kind()) {
       case IDENTIFIER:
         sb.append(' ').append(((IdentifierTree) syntaxNode).identifierToken().text());
         break;

@@ -20,9 +20,9 @@
 package org.sonar.java.cfg;
 
 import com.google.common.base.Charsets;
+import com.sonar.sslr.api.typed.ActionParser;
 import org.junit.Test;
 import org.sonar.java.ast.parser.JavaParser;
-import org.sonar.java.parser.sslr.ActionParser;
 import org.sonar.plugins.java.api.tree.ClassTree;
 import org.sonar.plugins.java.api.tree.CompilationUnitTree;
 import org.sonar.plugins.java.api.tree.MethodTree;
@@ -32,7 +32,7 @@ import static org.fest.assertions.Assertions.assertThat;
 
 public class CFGTest {
 
-  public static final ActionParser parser = JavaParser.createParser(Charsets.UTF_8);
+  public static final ActionParser<Tree> parser = JavaParser.createParser(Charsets.UTF_8);
 
   private static CFG buildCFG(String methodCode) {
     CompilationUnitTree cut = (CompilationUnitTree) parser.parse("class A { "+methodCode+" }");
