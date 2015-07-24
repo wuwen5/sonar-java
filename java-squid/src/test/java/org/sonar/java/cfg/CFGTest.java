@@ -88,7 +88,7 @@ public class CFGTest {
   }
 
   @Test
-  public void conditional_expression() throws Exception {
+  public void conditional_or_and() throws Exception {
     CFG cfg = buildCFG("void fun() {if(a || b) { foo(); } }");
     assertThat(cfg.blocks).hasSize(5);
     assertThat(cfg.blocks.get(4).terminator.is(Tree.Kind.CONDITIONAL_OR)).isTrue();
@@ -98,6 +98,13 @@ public class CFGTest {
     assertThat(cfg.blocks).hasSize(5);
     assertThat(cfg.blocks.get(4).terminator.is(Tree.Kind.CONDITIONAL_AND)).isTrue();
     assertThat(cfg.blocks.get(3).terminator.is(Tree.Kind.IF_STATEMENT)).isTrue();
+  }
+
+  @Test
+  public void conditional_expression() throws Exception {
+    CFG cfg = buildCFG("void fun() { foo ? a : b; a.toString();}");
+    assertThat(cfg.blocks).hasSize(5);
+    assertThat(cfg.blocks.get(4).terminator.is(Tree.Kind.CONDITIONAL_EXPRESSION)).isTrue();
   }
 
   private static int[] successors(CFG.Block block) {
