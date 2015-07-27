@@ -111,6 +111,14 @@ public class CFGTest {
     assertThat(cfg.blocks.get(4).terminator.is(Tree.Kind.CONDITIONAL_EXPRESSION)).isTrue();
   }
 
+  @Test
+  public void test_switch() throws Exception {
+    CFG cfg = buildCFG("void fun(int foo) { int a; switch(foo) { case 1: System.out.println(bar);case 2: System.out.println(qix);break; default: System.out.println(baz);} }");
+//    assertThat(cfg.blocks).hasSize(7);
+    cfg.debugTo(System.out);
+//    assertThat(cfg.blocks.get(1).terminator.is(Tree.Kind.CONDITIONAL_EXPRESSION)).isTrue();
+  }
+
   private static int[] successors(CFG.Block block) {
     int[] successors = new int[block.successors.size()];
     for (int i = 0; i < block.successors.size(); i++) {

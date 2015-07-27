@@ -24,6 +24,7 @@ import com.google.common.collect.Lists;
 import org.sonar.plugins.java.api.tree.AssignmentExpressionTree;
 import org.sonar.plugins.java.api.tree.BinaryExpressionTree;
 import org.sonar.plugins.java.api.tree.BlockTree;
+import org.sonar.plugins.java.api.tree.CaseGroupTree;
 import org.sonar.plugins.java.api.tree.ConditionalExpressionTree;
 import org.sonar.plugins.java.api.tree.ExpressionStatementTree;
 import org.sonar.plugins.java.api.tree.ExpressionTree;
@@ -35,11 +36,16 @@ import org.sonar.plugins.java.api.tree.MethodInvocationTree;
 import org.sonar.plugins.java.api.tree.MethodTree;
 import org.sonar.plugins.java.api.tree.ParenthesizedTree;
 import org.sonar.plugins.java.api.tree.StatementTree;
+import org.sonar.plugins.java.api.tree.SwitchStatementTree;
 import org.sonar.plugins.java.api.tree.Tree;
 import org.sonar.plugins.java.api.tree.VariableTree;
 
+import javax.annotation.Nullable;
+
 import java.io.PrintStream;
 import java.util.ArrayList;
+import java.util.Deque;
+import java.util.LinkedList;
 import java.util.List;
 
 public class CFG {
@@ -51,6 +57,10 @@ public class CFG {
    * List of all blocks in order they were created.
    */
   final List<Block> blocks = new ArrayList<>();
+
+  private final Deque<Block> breakTargets = new LinkedList<>();
+
+  private final Deque<Block> switches = new LinkedList<>();
 
   public Block entry() {
     return currentBlock;
@@ -94,6 +104,12 @@ public class CFG {
   public static CFG build(MethodTree tree) {
     Preconditions.checkArgument(tree.block() != null, "Cannot build CFG for method with no body.");
     return new CFG(tree.block());
+  }
+
+  private void build(List<? extends Tree> trees) {
+    for (Tree tree : Lists.reverse(trees)) {
+      build(tree);
+    }
   }
 
   private void build(Tree tree) {
@@ -181,7 +197,7 @@ public class CFG {
       case IDENTIFIER:
         currentBlock.elements.add(tree);
         break;
-      case CONDITIONAL_AND:{
+      case CONDITIONAL_AND: {
         BinaryExpressionTree e = (BinaryExpressionTree) tree;
         // process RHS
         Block falseBlock = currentBlock;
@@ -205,9 +221,52 @@ public class CFG {
         build(e.leftOperand());
         break;
       }
-
+      case SWITCH_STATEMENT: {
+        //FIXME useless node created for default cases.
+        SwitchStatementTree switchStatementTree = (SwitchStatementTree) tree;
+        Block switchSuccessor = currentBlock;
+        // process condition
+        currentBlock = createBlock();
+        currentBlock.terminator = switchStatementTree;
+        switches.addLast(currentBlock);
+        build(switchStatementTree.expression());
+        // process body
+        currentBlock = createBlock(switchSuccessor);
+        breakTargets.addLast(switchSuccessor);
+        if (!switchStatementTree.cases().isEmpty()) {
+          CaseGroupTree firstCase = switchStatementTree.cases().get(0);
+          for (CaseGroupTree caseGroupTree : switchStatementTree.cases()) {
+            build(caseGroupTree.body());
+            switches.getLast().successors.add(currentBlock);
+            if (caseGroupTree != firstCase) {
+              // No block predecessing the first case group.
+              currentBlock = createBlock(currentBlock);
+            }
+          }
+        }
+        breakTargets.removeLast();
+        // process condition
+        currentBlock = switches.removeLast();
+        break;
+      }
+      case BREAK_STATEMENT: {
+        if (breakTargets.isEmpty()) {
+          throw new IllegalStateException("'break' statement not in loop or switch statement");
+        }
+        currentBlock = createUnconditionalJump(tree, breakTargets.getLast());
+        break;
+      }
     }
 
+  }
+
+  private Block createUnconditionalJump(Tree terminator, @Nullable Block target) {
+    Block result = createBlock();
+    result.terminator = terminator;
+    if (target != null) {
+      result.successors.add(target);
+    }
+    return result;
   }
 
   private void buildCondition(Tree syntaxNode, Block trueBlock, Block falseBlock) {
