@@ -181,6 +181,31 @@ public class CFG {
       case IDENTIFIER:
         currentBlock.elements.add(tree);
         break;
+      case CONDITIONAL_AND:{
+        BinaryExpressionTree e = (BinaryExpressionTree) tree;
+        // process RHS
+        Block falseBlock = currentBlock;
+        currentBlock = createBlock(falseBlock);
+        build(e.rightOperand());
+        Block trueBlock = currentBlock;
+        // process LHS
+        currentBlock = createBranch(e, trueBlock, falseBlock);
+        build(e.leftOperand());
+        break;
+      }
+      case CONDITIONAL_OR: {
+        BinaryExpressionTree e = (BinaryExpressionTree) tree;
+        // process RHS
+        Block trueBlock = currentBlock;
+        currentBlock = createBlock(trueBlock);
+        build(e.rightOperand());
+        Block falseBlock = currentBlock;
+        // process LHS
+        currentBlock = createBranch(e, trueBlock, falseBlock);
+        build(e.leftOperand());
+        break;
+      }
+
     }
 
   }

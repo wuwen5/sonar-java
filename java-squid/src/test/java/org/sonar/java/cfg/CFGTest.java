@@ -98,6 +98,10 @@ public class CFGTest {
     assertThat(cfg.blocks).hasSize(5);
     assertThat(cfg.blocks.get(4).terminator.is(Tree.Kind.CONDITIONAL_AND)).isTrue();
     assertThat(cfg.blocks.get(3).terminator.is(Tree.Kind.IF_STATEMENT)).isTrue();
+
+    cfg = buildCFG("void fun() {boolean bool = a && b;}");
+    assertThat(cfg.blocks).hasSize(4);
+    assertThat(cfg.blocks.get(3).terminator.is(Tree.Kind.CONDITIONAL_AND)).isTrue();
   }
 
   @Test
