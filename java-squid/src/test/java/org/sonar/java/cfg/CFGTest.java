@@ -114,8 +114,15 @@ public class CFGTest {
   @Test
   public void test_switch() throws Exception {
     CFG cfg = buildCFG("void fun(int foo) { int a; switch(foo) { case 1: System.out.println(bar);case 2: System.out.println(qix);break; default: System.out.println(baz);} }");
-    cfg.debugTo(System.out);
     assertThat(cfg.blocks.get(2).terminator.is(Tree.Kind.SWITCH_STATEMENT)).isTrue();
+  }
+
+  @Test
+  public void return_statement() throws Exception {
+    CFG cfg = buildCFG("void fun(Object foo) { if(foo == null) return; }");
+    cfg.debugTo(System.out);
+    assertThat(cfg.blocks).hasSize(5);
+    assertThat(cfg.blocks.get(3).terminator.is(Tree.Kind.RETURN_STATEMENT)).isTrue();
   }
 
   private static int[] successors(CFG.Block block) {

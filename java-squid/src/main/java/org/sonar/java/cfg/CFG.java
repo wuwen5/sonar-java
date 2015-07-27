@@ -35,6 +35,7 @@ import org.sonar.plugins.java.api.tree.MemberSelectExpressionTree;
 import org.sonar.plugins.java.api.tree.MethodInvocationTree;
 import org.sonar.plugins.java.api.tree.MethodTree;
 import org.sonar.plugins.java.api.tree.ParenthesizedTree;
+import org.sonar.plugins.java.api.tree.ReturnStatementTree;
 import org.sonar.plugins.java.api.tree.StatementTree;
 import org.sonar.plugins.java.api.tree.SwitchStatementTree;
 import org.sonar.plugins.java.api.tree.Tree;
@@ -119,6 +120,15 @@ public class CFG {
           build(statementTree);
         }
         break;
+      case RETURN_STATEMENT:{
+        ReturnStatementTree s = (ReturnStatementTree) tree;
+        currentBlock = createUnconditionalJump(s, exitBlock);
+        ExpressionTree expression = s.expression();
+        if (expression != null) {
+          build(expression);
+        }
+        break;
+      }
       case EXPRESSION_STATEMENT:
         build(((ExpressionStatementTree) tree).expression());
         break;
