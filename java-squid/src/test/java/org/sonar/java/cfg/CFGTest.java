@@ -140,6 +140,36 @@ public class CFGTest {
     assertThat(cfg.blocks).hasSize(9);
   }
 
+  @Test
+  public void while_loops() {
+    CFG cfg = buildCFG("void fun() {int i = 0; while(i < 10) {i++; System.out.println(i); } }");
+    assertThat(cfg.blocks).hasSize(6);
+    assertThat(cfg.blocks.get(4).terminator.is(Tree.Kind.WHILE_STATEMENT)).isTrue();
+    cfg = buildCFG("void fun() {int i = 0; while(i < 10) {i++; if(i == 5) break; } }");
+    //orphan nodes are created because of break (not a problem as they won't be visited during se)
+    assertThat(cfg.blocks).hasSize(9);
+    assertThat(cfg.blocks.get(5).terminator.is(Tree.Kind.BREAK_STATEMENT)).isTrue();
+    //orphan nodes are created because of continue (not a problem as they won't be visited during se)
+    cfg = buildCFG("void fun() {int i = 0; while(i < 10) {i++; if(i == 5) continue; } }");
+    assertThat(cfg.blocks.get(5).terminator.is(Tree.Kind.CONTINUE_STATEMENT)).isTrue();
+    assertThat(cfg.blocks).hasSize(9);
+  }
+
+  @Test
+  public void do_while_loops() {
+    CFG cfg = buildCFG("void fun() {int i = 0; do {i++; System.out.println(i); }while(i < 10); }");
+    assertThat(cfg.blocks).hasSize(6);
+    assertThat(cfg.blocks.get(3).terminator.is(Tree.Kind.DO_STATEMENT)).isTrue();
+    cfg = buildCFG("void fun() {int i = 0; do { i++; if(i == 5) break; }while(i < 10); }");
+    //orphan nodes are created because of break (not a problem as they won't be visited during se)
+    assertThat(cfg.blocks).hasSize(9);
+    assertThat(cfg.blocks.get(6).terminator.is(Tree.Kind.BREAK_STATEMENT)).isTrue();
+    //orphan nodes are created because of continue (not a problem as they won't be visited during se)
+    cfg = buildCFG("void fun() {int i = 0; do{i++; if(i == 5) continue; }while(i < 10); }");
+    assertThat(cfg.blocks).hasSize(9);
+    assertThat(cfg.blocks.get(6).terminator.is(Tree.Kind.CONTINUE_STATEMENT)).isTrue();
+  }
+
   private static int[] successors(CFG.Block block) {
     int[] successors = new int[block.successors.size()];
     for (int i = 0; i < block.successors.size(); i++) {

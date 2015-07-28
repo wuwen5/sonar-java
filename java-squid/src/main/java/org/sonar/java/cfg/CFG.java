@@ -26,6 +26,7 @@ import org.sonar.plugins.java.api.tree.BinaryExpressionTree;
 import org.sonar.plugins.java.api.tree.BlockTree;
 import org.sonar.plugins.java.api.tree.CaseGroupTree;
 import org.sonar.plugins.java.api.tree.ConditionalExpressionTree;
+import org.sonar.plugins.java.api.tree.DoWhileStatementTree;
 import org.sonar.plugins.java.api.tree.ExpressionStatementTree;
 import org.sonar.plugins.java.api.tree.ExpressionTree;
 import org.sonar.plugins.java.api.tree.ForStatementTree;
@@ -42,6 +43,7 @@ import org.sonar.plugins.java.api.tree.SwitchStatementTree;
 import org.sonar.plugins.java.api.tree.Tree;
 import org.sonar.plugins.java.api.tree.UnaryExpressionTree;
 import org.sonar.plugins.java.api.tree.VariableTree;
+import org.sonar.plugins.java.api.tree.WhileStatementTree;
 
 import javax.annotation.Nullable;
 
@@ -289,6 +291,47 @@ public class CFG {
           throw new IllegalStateException("'break' statement not in loop or switch statement");
         }
         currentBlock = createUnconditionalJump(tree, continueTargets.getLast());
+        break;
+      }
+      case WHILE_STATEMENT: {
+        WhileStatementTree s = (WhileStatementTree) tree;
+        Block falseBranch = currentBlock;
+        Block loopback = createBlock();
+        // process body
+        currentBlock = createBlock(loopback);
+        continueTargets.addLast(loopback);
+        breakTargets.addLast(falseBranch);
+        build(s.statement());
+        breakTargets.removeLast();
+        continueTargets.removeLast();
+        Block bodyBlock = currentBlock;
+        // process condition
+        currentBlock = createBranch(s, bodyBlock, falseBranch);
+        buildCondition(s.condition(), bodyBlock, falseBranch);
+        loopback.successors.add(currentBlock);
+        currentBlock = createBlock(currentBlock);
+        break;
+      }
+      case DO_STATEMENT: {
+        DoWhileStatementTree s = (DoWhileStatementTree) tree;
+        Block falseBranch = currentBlock;
+        Block loopback = createBlock();
+        // process condition
+        currentBlock = createBranch(s, loopback, falseBranch);
+        buildCondition(s.condition(), loopback, falseBranch);
+        // process body
+        currentBlock = createBlock(currentBlock);
+        continueTargets.addLast(loopback);
+        breakTargets.addLast(falseBranch);
+        build(s.statement());
+        breakTargets.removeLast();
+        continueTargets.removeLast();
+        loopback.successors.add(currentBlock);
+        currentBlock = createBlock(currentBlock);
+        break;
+      }
+      case FOR_EACH_STATEMENT: {
+        //TODO(npe) One solution is to create a forstatement node depending on type of expression (iterable or array) and build CFG from it.
         break;
       }
       case FOR_STATEMENT: {
