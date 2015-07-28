@@ -28,6 +28,7 @@ import org.sonar.plugins.java.api.tree.CaseGroupTree;
 import org.sonar.plugins.java.api.tree.ConditionalExpressionTree;
 import org.sonar.plugins.java.api.tree.ExpressionStatementTree;
 import org.sonar.plugins.java.api.tree.ExpressionTree;
+import org.sonar.plugins.java.api.tree.ForStatementTree;
 import org.sonar.plugins.java.api.tree.IdentifierTree;
 import org.sonar.plugins.java.api.tree.IfStatementTree;
 import org.sonar.plugins.java.api.tree.LiteralTree;
@@ -39,6 +40,7 @@ import org.sonar.plugins.java.api.tree.ReturnStatementTree;
 import org.sonar.plugins.java.api.tree.StatementTree;
 import org.sonar.plugins.java.api.tree.SwitchStatementTree;
 import org.sonar.plugins.java.api.tree.Tree;
+import org.sonar.plugins.java.api.tree.UnaryExpressionTree;
 import org.sonar.plugins.java.api.tree.VariableTree;
 
 import javax.annotation.Nullable;
@@ -60,6 +62,7 @@ public class CFG {
   final List<Block> blocks = new ArrayList<>();
 
   private final Deque<Block> breakTargets = new LinkedList<>();
+  private final Deque<Block> continueTargets = new LinkedList<>();
 
   private final Deque<Block> switches = new LinkedList<>();
 
@@ -187,6 +190,21 @@ public class CFG {
           build(variableTree.initializer());
         }
         break;
+      case MULTIPLY:
+      case DIVIDE:
+      case REMAINDER:
+      case PLUS:
+      case MINUS:
+      case LEFT_SHIFT:
+      case RIGHT_SHIFT:
+      case UNSIGNED_RIGHT_SHIFT:
+      case AND:
+      case XOR:
+      case OR:
+      case GREATER_THAN:
+      case GREATER_THAN_OR_EQUAL_TO:
+      case LESS_THAN:
+      case LESS_THAN_OR_EQUAL_TO:
       case EQUAL_TO:
       case NOT_EQUAL_TO:
         BinaryExpressionTree binaryExpressionTree = (BinaryExpressionTree) tree;
@@ -266,6 +284,66 @@ public class CFG {
         currentBlock = createUnconditionalJump(tree, breakTargets.getLast());
         break;
       }
+      case CONTINUE_STATEMENT: {
+        if (continueTargets.isEmpty()) {
+          throw new IllegalStateException("'break' statement not in loop or switch statement");
+        }
+        currentBlock = createUnconditionalJump(tree, continueTargets.getLast());
+        break;
+      }
+      case FOR_STATEMENT: {
+        ForStatementTree s = (ForStatementTree) tree;
+        Block falseBranch = currentBlock;
+        // process step
+        currentBlock = createBlock();
+        Block stepBlock = currentBlock;
+        for (StatementTree updateTree : Lists.reverse(s.update())) {
+          build(updateTree);
+        }
+        // process body
+        currentBlock = createBlock(currentBlock);
+        continueTargets.addLast(stepBlock);
+        breakTargets.addLast(falseBranch);
+        build(s.statement());
+        breakTargets.removeLast();
+        continueTargets.removeLast();
+        Block body = currentBlock;
+        // process condition
+        currentBlock = createBranch(s, body, falseBranch);
+        ExpressionTree condition = s.condition();
+        if (condition != null) {
+          buildCondition(condition, body, falseBranch);
+        }
+        stepBlock.successors.add(currentBlock);
+        // process init
+        currentBlock = createBlock(currentBlock);
+        for (StatementTree init : Lists.reverse(s.initializer())) {
+          build(init);
+        }
+        break;
+      }
+      case POSTFIX_INCREMENT:
+      case POSTFIX_DECREMENT:
+      case PREFIX_INCREMENT:
+      case PREFIX_DECREMENT:
+      case UNARY_MINUS:
+      case UNARY_PLUS:
+      case BITWISE_COMPLEMENT:
+      case LOGICAL_COMPLEMENT:
+        UnaryExpressionTree e = (UnaryExpressionTree) tree;
+        currentBlock.elements.add(e);
+        build(e.expression());
+        break;
+      case INT_LITERAL:
+      case LONG_LITERAL:
+      case DOUBLE_LITERAL:
+      case CHAR_LITERAL:
+      case FLOAT_LITERAL:
+      case STRING_LITERAL:
+      case BOOLEAN_LITERAL:
+      case NULL_LITERAL:
+      default:
+        currentBlock.elements.add(tree);
     }
 
   }

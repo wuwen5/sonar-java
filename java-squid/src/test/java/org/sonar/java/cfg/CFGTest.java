@@ -120,9 +120,24 @@ public class CFGTest {
   @Test
   public void return_statement() throws Exception {
     CFG cfg = buildCFG("void fun(Object foo) { if(foo == null) return; }");
-    cfg.debugTo(System.out);
     assertThat(cfg.blocks).hasSize(5);
     assertThat(cfg.blocks.get(3).terminator.is(Tree.Kind.RETURN_STATEMENT)).isTrue();
+  }
+
+  @Test
+  public void for_loops() {
+    CFG cfg = buildCFG("void fun(Object foo) { for(int i =0;i<10;i++) { System.out.println(i); } }");
+    assertThat(cfg.blocks).hasSize(6);
+    assertThat(cfg.blocks.get(4).terminator.is(Tree.Kind.FOR_STATEMENT)).isTrue();
+
+    cfg = buildCFG("void fun(Object foo) { for(int i =0;i<10;i++) { if(i == 5) break; } }");
+    //orphan nodes are created because of break (not a problem as they won't be visited during se)
+    assertThat(cfg.blocks).hasSize(9);
+    assertThat(cfg.blocks.get(5).terminator.is(Tree.Kind.BREAK_STATEMENT)).isTrue();
+    //orphan nodes are created because of continue (not a problem as they won't be visited during se)
+    cfg = buildCFG("void fun(Object foo) { for(int i =0;i<10;i++) { if(i == 5) continue; } }");
+    assertThat(cfg.blocks.get(5).terminator.is(Tree.Kind.CONTINUE_STATEMENT)).isTrue();
+    assertThat(cfg.blocks).hasSize(9);
   }
 
   private static int[] successors(CFG.Block block) {

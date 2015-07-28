@@ -291,12 +291,13 @@ class NullPointerTest {
 
   public void testForLoop() {
     Object object = null;
-    for(; object.hashCode() != 0; object.hashCode()) { // Noncompliant 2 {{NullPointerException might be thrown as 'object' is nullable here}}
-      object.hashCode(); // False negative
+    for (; object.hashCode() != 0; object.hashCode()) { // Noncompliant {{NullPointerException might be thrown as 'object' is nullable here}}
+      object.hashCode();
       object = null;
     }
-    object.hashCode(); // False negative
-    for(Object object1 = null, object2 = null; true; object2.hashCode()) { // Noncompliant {{NullPointerException might be thrown as 'object2' is nullable here}}
+   }
+  public void testForLoop2() {
+    for(Object object1 = null, object2 = null; true; object2.hashCode()) {
       object1.hashCode(); // Noncompliant {{NullPointerException might be thrown as 'object1' is nullable here}}
     }
   }
