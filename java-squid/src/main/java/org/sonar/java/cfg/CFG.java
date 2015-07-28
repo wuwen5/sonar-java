@@ -41,6 +41,7 @@ import org.sonar.plugins.java.api.tree.ReturnStatementTree;
 import org.sonar.plugins.java.api.tree.StatementTree;
 import org.sonar.plugins.java.api.tree.SwitchStatementTree;
 import org.sonar.plugins.java.api.tree.Tree;
+import org.sonar.plugins.java.api.tree.TryStatementTree;
 import org.sonar.plugins.java.api.tree.UnaryExpressionTree;
 import org.sonar.plugins.java.api.tree.VariableTree;
 import org.sonar.plugins.java.api.tree.WhileStatementTree;
@@ -363,6 +364,18 @@ public class CFG {
         for (StatementTree init : Lists.reverse(s.initializer())) {
           build(init);
         }
+        break;
+      }
+      case TRY_STATEMENT: {
+        //FIXME only path with no failure constructed for now, (not taking try with resources into consideration).
+        TryStatementTree tryStatementTree = (TryStatementTree) tree;
+        currentBlock = createBlock(currentBlock);
+        BlockTree finallyBlock = tryStatementTree.finallyBlock();
+        if(finallyBlock != null) {
+          build(finallyBlock);
+        }
+        currentBlock = createBlock(currentBlock);
+        build(tryStatementTree.block());
         break;
       }
       case POSTFIX_INCREMENT:

@@ -170,6 +170,13 @@ public class CFGTest {
     assertThat(cfg.blocks.get(6).terminator.is(Tree.Kind.CONTINUE_STATEMENT)).isTrue();
   }
 
+  @Test
+  public void try_statement() throws Exception {
+    //Only two blocks connected to each other for now. s
+    CFG cfg = buildCFG("void fun() {try {System.out.println('');} finally { System.out.println(''); }}");
+    assertThat(cfg.blocks).hasSize(4);
+  }
+
   private static int[] successors(CFG.Block block) {
     int[] successors = new int[block.successors.size()];
     for (int i = 0; i < block.successors.size(); i++) {
