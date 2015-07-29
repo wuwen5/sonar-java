@@ -309,11 +309,11 @@ public class CFG {
         break;
       }
       case BREAK_STATEMENT: {
-        if (breakTargets.isEmpty()) {
-          throw new IllegalStateException("'break' statement not in loop or switch statement");
-        }
         BreakStatementTree breakStatementTree = (BreakStatementTree) tree;
         if(breakStatementTree.label() == null) {
+          if (breakTargets.isEmpty()) {
+            throw new IllegalStateException("'break' statement not in loop or switch statement");
+          }
           currentBlock = createUnconditionalJump(tree, breakTargets.getLast());
         } else {
           currentBlock = createUnconditionalJump(tree, null);
@@ -322,11 +322,11 @@ public class CFG {
         break;
       }
       case CONTINUE_STATEMENT: {
-        if (continueTargets.isEmpty()) {
-          throw new IllegalStateException("'break' statement not in loop or switch statement");
-        }
         ContinueStatementTree continueStatementTree = (ContinueStatementTree) tree;
         if(continueStatementTree.label() == null) {
+          if (continueTargets.isEmpty()) {
+            throw new IllegalStateException("'break' statement not in loop or switch statement");
+          }
           currentBlock = createUnconditionalJump(tree, continueTargets.getLast());
         } else {
           currentBlock = createUnconditionalJump(tree, null);
