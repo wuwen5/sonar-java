@@ -171,6 +171,16 @@ public class CFGTest {
   }
 
   @Test
+  public void label_statement() throws Exception {
+    CFG cfg = buildCFG("void fun() { foo: for(int i = 0; i<10;i++) { if(i==5) break foo; } }");
+    assertThat(cfg.blocks).hasSize(10);
+    cfg = buildCFG("void fun() { foo: for(int i = 0; i<10;i++) { if(i==5) continue foo; } }");
+    assertThat(cfg.blocks).hasSize(10);
+
+
+  }
+
+  @Test
   public void try_statement() throws Exception {
     //Only two blocks connected to each other for now. s
     CFG cfg = buildCFG("void fun() {try {System.out.println('');} finally { System.out.println(''); }}");

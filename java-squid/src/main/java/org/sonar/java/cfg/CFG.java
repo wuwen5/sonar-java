@@ -21,17 +21,21 @@ package org.sonar.java.cfg;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import org.sonar.plugins.java.api.tree.AssignmentExpressionTree;
 import org.sonar.plugins.java.api.tree.BinaryExpressionTree;
 import org.sonar.plugins.java.api.tree.BlockTree;
+import org.sonar.plugins.java.api.tree.BreakStatementTree;
 import org.sonar.plugins.java.api.tree.CaseGroupTree;
 import org.sonar.plugins.java.api.tree.ConditionalExpressionTree;
+import org.sonar.plugins.java.api.tree.ContinueStatementTree;
 import org.sonar.plugins.java.api.tree.DoWhileStatementTree;
 import org.sonar.plugins.java.api.tree.ExpressionStatementTree;
 import org.sonar.plugins.java.api.tree.ExpressionTree;
 import org.sonar.plugins.java.api.tree.ForStatementTree;
 import org.sonar.plugins.java.api.tree.IdentifierTree;
 import org.sonar.plugins.java.api.tree.IfStatementTree;
+import org.sonar.plugins.java.api.tree.LabeledStatementTree;
 import org.sonar.plugins.java.api.tree.LiteralTree;
 import org.sonar.plugins.java.api.tree.MemberSelectExpressionTree;
 import org.sonar.plugins.java.api.tree.MethodInvocationTree;
@@ -53,6 +57,7 @@ import java.util.ArrayList;
 import java.util.Deque;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
 public class CFG {
 
@@ -68,6 +73,8 @@ public class CFG {
   private final Deque<Block> continueTargets = new LinkedList<>();
 
   private final Deque<Block> switches = new LinkedList<>();
+  private Map<String, Block> labels = Maps.newHashMap();
+  private final List<Block> gotos = new LinkedList<>();
 
   public Block entry() {
     return currentBlock;
@@ -93,6 +100,23 @@ public class CFG {
     currentBlock = createBlock(exitBlock);
     for (StatementTree statementTree : Lists.reverse(tree.body())) {
       build(statementTree);
+    }
+
+    for (Block b : gotos) {
+      assert b.successors.isEmpty();
+      Tree s = b.terminator;
+      assert s != null;
+      String label;
+      if(s instanceof BreakStatementTree) {
+        label = ((BreakStatementTree) s).label().name();
+      } else {
+        label = ((ContinueStatementTree) s).label().name();
+      }
+      Block target = labels.get(label);
+      if (target == null) {
+        throw new IllegalStateException("Undeclared label: " + label);
+      }
+      b.successors.add(target);
     }
   }
 
@@ -225,9 +249,6 @@ public class CFG {
         currentBlock.elements.add(mse);
         build(mse.expression());
         break;
-      case IDENTIFIER:
-        currentBlock.elements.add(tree);
-        break;
       case CONDITIONAL_AND: {
         BinaryExpressionTree e = (BinaryExpressionTree) tree;
         // process RHS
@@ -250,6 +271,13 @@ public class CFG {
         // process LHS
         currentBlock = createBranch(e, trueBlock, falseBlock);
         build(e.leftOperand());
+        break;
+      }
+      case LABELED_STATEMENT: {
+        LabeledStatementTree s = (LabeledStatementTree) tree;
+        build(s.statement());
+        currentBlock = createBlock(currentBlock);
+        labels.put(s.label().name(), currentBlock);
         break;
       }
       case SWITCH_STATEMENT: {
@@ -284,14 +312,26 @@ public class CFG {
         if (breakTargets.isEmpty()) {
           throw new IllegalStateException("'break' statement not in loop or switch statement");
         }
-        currentBlock = createUnconditionalJump(tree, breakTargets.getLast());
+        BreakStatementTree breakStatementTree = (BreakStatementTree) tree;
+        if(breakStatementTree.label() == null) {
+          currentBlock = createUnconditionalJump(tree, breakTargets.getLast());
+        } else {
+          currentBlock = createUnconditionalJump(tree, null);
+          gotos.add(currentBlock);
+        }
         break;
       }
       case CONTINUE_STATEMENT: {
         if (continueTargets.isEmpty()) {
           throw new IllegalStateException("'break' statement not in loop or switch statement");
         }
-        currentBlock = createUnconditionalJump(tree, continueTargets.getLast());
+        ContinueStatementTree continueStatementTree = (ContinueStatementTree) tree;
+        if(continueStatementTree.label() == null) {
+          currentBlock = createUnconditionalJump(tree, continueTargets.getLast());
+        } else {
+          currentBlock = createUnconditionalJump(tree, null);
+          gotos.add(currentBlock);
+        }
         break;
       }
       case WHILE_STATEMENT: {
@@ -390,6 +430,10 @@ public class CFG {
         currentBlock.elements.add(e);
         build(e.expression());
         break;
+      case PARENTHESIZED_EXPRESSION:
+        build(((ParenthesizedTree) tree).expression());
+        break;
+      case IDENTIFIER:
       case INT_LITERAL:
       case LONG_LITERAL:
       case DOUBLE_LITERAL:
