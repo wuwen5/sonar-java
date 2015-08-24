@@ -44,6 +44,7 @@ import org.sonar.plugins.java.api.tree.ParenthesizedTree;
 import org.sonar.plugins.java.api.tree.ReturnStatementTree;
 import org.sonar.plugins.java.api.tree.StatementTree;
 import org.sonar.plugins.java.api.tree.SwitchStatementTree;
+import org.sonar.plugins.java.api.tree.ThrowStatementTree;
 import org.sonar.plugins.java.api.tree.Tree;
 import org.sonar.plugins.java.api.tree.TryStatementTree;
 import org.sonar.plugins.java.api.tree.UnaryExpressionTree;
@@ -416,6 +417,13 @@ public class CFG {
         }
         currentBlock = createBlock(currentBlock);
         build(tryStatementTree.block());
+        break;
+      }
+      case THROW_STATEMENT: {
+        //FIXME this won't work if it is intended to be caught by a try statement.
+        ThrowStatementTree throwStatementTree = (ThrowStatementTree) tree;
+        currentBlock = createUnconditionalJump(throwStatementTree, exitBlock);
+        build(throwStatementTree.expression());
         break;
       }
       case POSTFIX_INCREMENT:

@@ -187,6 +187,16 @@ public class CFGTest {
     assertThat(cfg.blocks).hasSize(4);
   }
 
+
+  @Test
+  public void throw_statement() throws Exception {
+    CFG cfg = buildCFG("void fun(Object a) {if(a==null) { throw new Exception();} System.out.println(''); }");
+    assertThat(cfg.blocks).hasSize(5);
+    assertThat(cfg.blocks.get(3).successors).hasSize(1);
+    //verify that throw statement jumps to exit block.
+    assertThat(cfg.blocks.get(3).successors.get(0)).isEqualTo(cfg.blocks.get(0));
+  }
+
   private static int[] successors(CFG.Block block) {
     int[] successors = new int[block.successors.size()];
     for (int i = 0; i < block.successors.size(); i++) {
