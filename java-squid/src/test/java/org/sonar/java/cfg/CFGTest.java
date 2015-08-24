@@ -25,6 +25,7 @@ import org.junit.Test;
 import org.sonar.java.ast.parser.JavaParser;
 import org.sonar.plugins.java.api.tree.ClassTree;
 import org.sonar.plugins.java.api.tree.CompilationUnitTree;
+import org.sonar.plugins.java.api.tree.IdentifierTree;
 import org.sonar.plugins.java.api.tree.MethodTree;
 import org.sonar.plugins.java.api.tree.Tree;
 
@@ -195,6 +196,16 @@ public class CFGTest {
     assertThat(cfg.blocks.get(3).successors).hasSize(1);
     //verify that throw statement jumps to exit block.
     assertThat(cfg.blocks.get(3).successors.get(0)).isEqualTo(cfg.blocks.get(0));
+  }
+
+  @Test
+  public void synchronized_statement() throws Exception {
+    CFG cfg = buildCFG("void fun(Object a) {if(a==null) { synchronized(a) { foo();bar();} } System.out.println(''); }");
+    assertThat(cfg.blocks).hasSize(4);
+    assertThat(cfg.blocks.get(2).elements).hasSize(5);
+    assertThat(cfg.blocks.get(2).elements.get(4).is(Tree.Kind.IDENTIFIER)).isTrue();
+    assertThat(((IdentifierTree) cfg.blocks.get(2).elements.get(4)).name()).isEqualTo("a");
+
   }
 
   private static int[] successors(CFG.Block block) {

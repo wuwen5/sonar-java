@@ -44,6 +44,7 @@ import org.sonar.plugins.java.api.tree.ParenthesizedTree;
 import org.sonar.plugins.java.api.tree.ReturnStatementTree;
 import org.sonar.plugins.java.api.tree.StatementTree;
 import org.sonar.plugins.java.api.tree.SwitchStatementTree;
+import org.sonar.plugins.java.api.tree.SynchronizedStatementTree;
 import org.sonar.plugins.java.api.tree.ThrowStatementTree;
 import org.sonar.plugins.java.api.tree.Tree;
 import org.sonar.plugins.java.api.tree.TryStatementTree;
@@ -424,6 +425,13 @@ public class CFG {
         ThrowStatementTree throwStatementTree = (ThrowStatementTree) tree;
         currentBlock = createUnconditionalJump(throwStatementTree, exitBlock);
         build(throwStatementTree.expression());
+        break;
+      }
+      case SYNCHRONIZED_STATEMENT: {
+        SynchronizedStatementTree sst = (SynchronizedStatementTree) tree;
+        //Naively build synchronized statement.
+        build(sst.block());
+        build(sst.expression());
         break;
       }
       case POSTFIX_INCREMENT:
