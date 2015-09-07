@@ -205,6 +205,14 @@ public class CFGTest {
     assertThat(cfg.blocks.get(2).elements).hasSize(5);
     assertThat(cfg.blocks.get(2).elements.get(4).is(Tree.Kind.IDENTIFIER)).isTrue();
     assertThat(((IdentifierTree) cfg.blocks.get(2).elements.get(4)).name()).isEqualTo("a");
+  }
+
+  @Test
+  public void testName() throws Exception {
+    CFG cfg = buildCFG("void fun(boolean a) { if(a ? false:false) {System.out.println('');}   }");
+    cfg.debugTo(System.out);
+
+
 
   }
 
