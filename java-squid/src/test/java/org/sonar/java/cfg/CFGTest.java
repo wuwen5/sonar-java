@@ -208,12 +208,12 @@ public class CFGTest {
   }
 
   @Test
-  public void testName() throws Exception {
-    CFG cfg = buildCFG("void fun(boolean a) { if(a ? false:false) {System.out.println('');}   }");
-    cfg.debugTo(System.out);
-
-
-
+  public void array_access_expression() throws Exception {
+    CFG cfg = buildCFG("void fun(int[] array) { array[0] = 1; array[3+2] = 4; }");
+    assertThat(cfg.blocks).hasSize(2);
+    assertThat(cfg.blocks.get(1).elements()).hasSize(12);
+    assertThat(cfg.blocks.get(1).elements().get(3).kind()).isEqualTo(Tree.Kind.ARRAY_ACCESS_EXPRESSION);
+    assertThat(cfg.blocks.get(1).elements().get(10).kind()).isEqualTo(Tree.Kind.ARRAY_ACCESS_EXPRESSION);
   }
 
   private static int[] successors(CFG.Block block) {

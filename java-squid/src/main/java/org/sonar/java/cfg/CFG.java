@@ -22,6 +22,8 @@ package org.sonar.java.cfg;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import org.sonar.plugins.java.api.tree.ArrayAccessExpressionTree;
+import org.sonar.plugins.java.api.tree.ArrayDimensionTree;
 import org.sonar.plugins.java.api.tree.AssignmentExpressionTree;
 import org.sonar.plugins.java.api.tree.BinaryExpressionTree;
 import org.sonar.plugins.java.api.tree.BlockTree;
@@ -244,6 +246,7 @@ public class CFG {
       case ASSIGNMENT:
         AssignmentExpressionTree assignmentExpressionTree = (AssignmentExpressionTree) tree;
         currentBlock.elements.add(tree);
+        build(assignmentExpressionTree.variable());
         build(assignmentExpressionTree.expression());
         break;
       case MEMBER_SELECT:
@@ -449,6 +452,18 @@ public class CFG {
       case PARENTHESIZED_EXPRESSION:
         build(((ParenthesizedTree) tree).expression());
         break;
+      case ARRAY_ACCESS_EXPRESSION: {
+        ArrayAccessExpressionTree aaet = (ArrayAccessExpressionTree) tree;
+        currentBlock.elements.add(aaet);
+        build(aaet.expression());
+        build(aaet.dimension());
+        break;
+      }
+      case ARRAY_DIMENSION: {
+        ArrayDimensionTree arrayDimensionTree = (ArrayDimensionTree) tree;
+        build(arrayDimensionTree.expression());
+        break;
+      }
       case IDENTIFIER:
       case INT_LITERAL:
       case LONG_LITERAL:
