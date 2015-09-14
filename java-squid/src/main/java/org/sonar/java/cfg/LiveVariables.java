@@ -66,7 +66,8 @@ public class LiveVariables {
             ExpressionTree lhs = ((AssignmentExpressionTree) element).variable();
             if (lhs.is(Tree.Kind.IDENTIFIER)) {
               symbol = ((IdentifierTree) lhs).symbol();
-              if (!symbol.isUnknown() && /* local variable */ !symbol.owner().isTypeSymbol()) {
+              if (isLocalVariable(symbol)) {
+                assert !symbol.isUnknown();
                 assignmentLHS.add(lhs);
                 blockGen.remove(symbol);
                 blockKill.add(symbol);
@@ -76,7 +77,8 @@ public class LiveVariables {
           case IDENTIFIER:
             if (!assignmentLHS.contains(element)) {
               symbol = ((IdentifierTree) element).symbol();
-              if (!symbol.isUnknown() && /* local variable */ !symbol.owner().isTypeSymbol()) {
+              if (isLocalVariable(symbol)) {
+                assert !symbol.isUnknown();
                 blockGen.add(symbol);
               }
             }
@@ -115,6 +117,10 @@ public class LiveVariables {
     }
 
     return liveVariables;
+  }
+
+  private static boolean isLocalVariable(Symbol symbol) {
+    return !symbol.owner().isTypeSymbol();
   }
 
   public void debugTo(PrintStream out) {
