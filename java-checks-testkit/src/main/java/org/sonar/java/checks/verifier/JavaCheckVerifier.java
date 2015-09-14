@@ -86,7 +86,11 @@ public class JavaCheckVerifier extends SubscriptionVisitor {
   }
 
   private static void scanFile(String filename, JavaFileScanner check, JavaCheckVerifier javaCheckVerifier) {
-    Collection<File> classpath = FileUtils.listFiles(new File("target/test-jars"), new String[]{"jar", "zip"}, true);
+    Collection<File> classpath = Lists.newLinkedList();
+    File testJars = new File("target/test-jars");
+    if(testJars.exists()) {
+      classpath = FileUtils.listFiles(testJars, new String[]{"jar", "zip"}, true);
+    }
     classpath.add(new File("target/test-classes"));
     JavaAstScanner.scanSingleFile(new File(filename), new VisitorsBridge(Lists.newArrayList(check, javaCheckVerifier), Lists.newArrayList(classpath), null));
   }
