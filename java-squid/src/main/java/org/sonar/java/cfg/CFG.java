@@ -87,7 +87,8 @@ public class CFG {
   public static class Block {
     public final int id;
     final List<Tree> elements = new ArrayList<>();
-    public List<Block> successors = Lists.newArrayList();
+    public List<Block> successors = new ArrayList<>();
+    public List<Block> predecessors = new ArrayList<>();
     public Tree terminator;
 
     public Block(int id) {
@@ -121,6 +122,12 @@ public class CFG {
         throw new IllegalStateException("Undeclared label: " + label);
       }
       b.successors.add(target);
+    }
+
+    for (Block b : blocks) {
+      for (Block successor : b.successors) {
+        successor.predecessors.add(b);
+      }
     }
   }
 

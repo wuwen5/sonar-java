@@ -1,0 +1,56 @@
+/*
+ * SonarQube Java
+ * Copyright (C) 2012 SonarSource
+ * sonarqube@googlegroups.com
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 3 of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02
+ */
+package org.sonar.java.cfg;
+
+import com.google.common.base.Charsets;
+import com.sonar.sslr.api.typed.ActionParser;
+import org.junit.Test;
+import org.sonar.java.ast.parser.JavaParser;
+import org.sonar.java.resolve.SemanticModel;
+import org.sonar.plugins.java.api.tree.ClassTree;
+import org.sonar.plugins.java.api.tree.CompilationUnitTree;
+import org.sonar.plugins.java.api.tree.MethodTree;
+import org.sonar.plugins.java.api.tree.Tree;
+
+import java.io.File;
+import java.util.Collections;
+
+public class LiveVariablesTest {
+
+  public static final ActionParser<Tree> PARSER = JavaParser.createParser(Charsets.UTF_8);
+
+  private static CFG buildCFG(String methodCode) {
+    CompilationUnitTree cut = (CompilationUnitTree) PARSER.parse("class A { int field; " + methodCode + " }");
+    SemanticModel.createFor(cut, Collections.<File>emptyList());
+    MethodTree tree = ((MethodTree) ((ClassTree) cut.types().get(0)).members().get(1));
+    return CFG.build(tree);
+  }
+
+  @Test
+  public void test() {
+    CFG cfg = buildCFG("void foo(int a) {  int i; /* should be live here */ if (false) ; foo(i); }");
+//    CFG cfg = buildCFG("void foo(int a) {  int i; /* should not be live here */ if (false) ; i = 0; }");
+//    CFG cfg = buildCFG("void foo(int a) { field = 0; /* fields should not be tracked */ if (false) ; foo(field); }");
+//    CFG cfg = buildCFG("void foo(int a) { a = 0; /* but arguments should be tracked */ if (false) ; foo(a); }");
+    cfg.debugTo(System.out);
+    LiveVariables.analyze(cfg).debugTo(System.out);
+  }
+
+}
