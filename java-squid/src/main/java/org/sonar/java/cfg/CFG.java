@@ -84,6 +84,10 @@ public class CFG {
     return currentBlock;
   }
 
+  public List<Block> blocks() {
+    return Lists.reverse(blocks);
+  }
+
   public static class Block {
     public final int id;
     final List<Tree> elements = new ArrayList<>();

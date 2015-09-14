@@ -128,11 +128,8 @@ public class LiveVariables {
       }
     }
 
-    // in of first block and out of exit block are empty by definition.
-    if (!liveVariables.in.get(cfg.blocks.get(cfg.blocks.size() - 1)).isEmpty()) {
-      throw new IllegalStateException("In of first block should be empty");
-    }
-    if(!liveVariables.out.get(cfg.blocks.get(0)).isEmpty()) {
+    // out of exit block are empty by definition.
+    if (!liveVariables.out.get(cfg.blocks.get(0)).isEmpty()) {
       throw new IllegalStateException("Out of exit block should be empty");
     }
     return liveVariables;

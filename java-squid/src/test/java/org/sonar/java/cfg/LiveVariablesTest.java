@@ -80,7 +80,13 @@ public class LiveVariablesTest {
     liveVariables.debugTo(System.out);
     assertThat(liveVariables.getOut(cfg.blocks.get(3))).isEmpty();
     assertThat(liveVariables.getOut(cfg.blocks.get(4))).isEmpty();
-
   }
 
+  @Test
+  public void in_of_first_block_should_be_empty() throws Exception {
+    CFG cfg = buildCFG("boolean foo(int a) { foo(a);}");
+    LiveVariables liveVariables = LiveVariables.analyze(cfg);
+    assertThat(liveVariables.getOut(cfg.blocks.get(0))).isEmpty();
+    assertThat(liveVariables.getOut(cfg.blocks.get(1))).isEmpty();
+  }
 }
