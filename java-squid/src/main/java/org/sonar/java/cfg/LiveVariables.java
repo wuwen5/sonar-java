@@ -89,6 +89,7 @@ public class LiveVariables {
             }
             break;
           case VARIABLE:
+            blockKill.add(((VariableTree) element).symbol());
             blockGen.remove(((VariableTree) element).symbol());
             break;
 
@@ -117,7 +118,7 @@ public class LiveVariables {
 
       // in = gen and (out - kill)
       Set<Symbol> newIn = new HashSet<>(gen.get(block));
-      newIn.removeAll(Sets.difference(out, kill.get(block)));
+      newIn.addAll(Sets.difference(out, kill.get(block)));
 
       if (newIn.equals(liveVariables.in.get(block))) {
         continue;

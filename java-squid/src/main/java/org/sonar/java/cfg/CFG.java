@@ -34,6 +34,7 @@ import org.sonar.plugins.java.api.tree.ContinueStatementTree;
 import org.sonar.plugins.java.api.tree.DoWhileStatementTree;
 import org.sonar.plugins.java.api.tree.ExpressionStatementTree;
 import org.sonar.plugins.java.api.tree.ExpressionTree;
+import org.sonar.plugins.java.api.tree.ForEachStatement;
 import org.sonar.plugins.java.api.tree.ForStatementTree;
 import org.sonar.plugins.java.api.tree.IdentifierTree;
 import org.sonar.plugins.java.api.tree.IfStatementTree;
@@ -388,7 +389,17 @@ public class CFG {
         break;
       }
       case FOR_EACH_STATEMENT: {
+        ForEachStatement s = (ForEachStatement) tree;
         //TODO(npe) One solution is to create a forstatement node depending on type of expression (iterable or array) and build CFG from it.
+        Block afterLoop = currentBlock;
+        Block loopback = createBlock();
+        continueTargets.addLast(loopback);
+        breakTargets.addLast(afterLoop);
+        build(s.statement());
+        breakTargets.removeLast();
+        continueTargets.removeLast();
+        build(s.variable());
+        build(s.expression());
         break;
       }
       case FOR_STATEMENT: {
@@ -409,10 +420,12 @@ public class CFG {
         continueTargets.removeLast();
         Block body = currentBlock;
         // process condition
-        currentBlock = createBranch(s, body, falseBranch);
         ExpressionTree condition = s.condition();
         if (condition != null) {
+          currentBlock = createBranch(s, body, falseBranch);
           buildCondition(condition, body, falseBranch);
+        } else {
+          currentBlock = createUnconditionalJump(s, body);
         }
         stepBlock.successors.add(currentBlock);
         // process init
@@ -484,8 +497,12 @@ public class CFG {
       case STRING_LITERAL:
       case BOOLEAN_LITERAL:
       case NULL_LITERAL:
+        currentBlock.elements.add(tree);
+        break;
       default:
         currentBlock.elements.add(tree);
+        break;
+        //throw new UnsupportedOperationException(tree.kind().name());
     }
 
   }
@@ -569,6 +586,9 @@ public class CFG {
     StringBuilder sb = new StringBuilder(syntaxNode.kind().name())
       .append(' ').append(Integer.toHexString(syntaxNode.hashCode()));
     switch (syntaxNode.kind()) {
+      case VARIABLE:
+        sb.append(' ').append(((VariableTree) syntaxNode).simpleName().name());
+        break;
       case IDENTIFIER:
         sb.append(' ').append(((IdentifierTree) syntaxNode).identifierToken().text());
         break;

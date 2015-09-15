@@ -78,8 +78,8 @@ public class LiveVariablesTest {
     cfg.debugTo(System.out);
     LiveVariables liveVariables = LiveVariables.analyze(cfg);
     liveVariables.debugTo(System.out);
-    assertThat(liveVariables.getOut(cfg.blocks.get(3))).isEmpty();
-    assertThat(liveVariables.getOut(cfg.blocks.get(4))).isEmpty();
+    assertThat(liveVariables.getOut(cfg.blocks.get(3))).hasSize(1);
+    assertThat(liveVariables.getOut(cfg.blocks.get(4))).hasSize(1);
   }
 
   @Test
