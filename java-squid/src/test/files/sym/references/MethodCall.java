@@ -1,4 +1,4 @@
-package references;
+package references; import java.util.List;
 
 @SuppressWarnings("all")
 class MethodCall extends Parent {
@@ -156,4 +156,31 @@ class OverloadingAutoboxing {
     process3(int1);
     process3(integer1);
   }
+}
+
+class GenericClass {
+
+  class NestedGenericClass<T> {
+    private NestedGenericClass(T argument) {
+    }
+
+    private void genericMethod(T argument) {
+    }
+  }
+
+  class ComplexNestedGenericClass<T extends java.util.Collection<Object>> {
+    private ComplexNestedGenericClass(T argument) {
+    }
+
+    private void complexGenericMethod(T argument) {
+    }
+  }
+
+  public void test() {
+    NestedGenericClass<List<Object>> nestedGenericClass = new NestedGenericClass<List<Object>>(new java.util.ArrayList<Object>());
+    nestedGenericClass.genericMethod(new java.util.LinkedList<Object>());
+    ComplexNestedGenericClass<List<Object>> complexNestedGenericClass = new ComplexNestedGenericClass<List<Object>>(new java.util.ArrayList<Object>());
+    complexNestedGenericClass.complexGenericMethod(new java.util.LinkedList<Object>());
+  }
+
 }

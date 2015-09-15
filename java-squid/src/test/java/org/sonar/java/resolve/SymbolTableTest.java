@@ -552,6 +552,11 @@ public class SymbolTableTest {
 
     assertThat(result.reference(156, 5)).isSameAs(result.symbol("process3", 153));
     assertThat(result.reference(157, 5)).isSameAs(result.symbol("process3", 154));
+
+    assertThat(result.reference(180, 63, "<init>")).isSameAs(result.symbol("<init>", 164));
+    assertThat(result.reference(181, 24)).isSameAs(result.symbol("genericMethod", 167));
+    assertThat(result.reference(182, 77, "<init>")).isSameAs(result.symbol("<init>", 172));
+    assertThat(result.reference(183, 31)).isSameAs(result.symbol("complexGenericMethod", 175));
   }
 
   @Test

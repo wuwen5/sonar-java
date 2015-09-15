@@ -65,12 +65,11 @@ public class Types {
           }
 
           //FIXME work on erased types while generics method is not implemented/read from bytecode.
-          Set<JavaType> erasedTypes = Sets.newHashSet();
+          Set<String> erasedTypes = Sets.newHashSet();
           for (JavaType.ClassJavaType classType : t.getSymbol().superTypes()) {
-            erasedTypes.add(classType.erasure());
+            erasedTypes.add(classType.erasure().fullyQualifiedName());
           }
-
-          result = erasedTypes.contains(s);
+          result = erasedTypes.contains(s.fullyQualifiedName());
           break;
         case JavaType.BOT:
           result = s.tag == JavaType.BOT || s.tag == JavaType.CLASS || s.tag == JavaType.ARRAY;
