@@ -25,6 +25,7 @@ import org.sonar.plugins.java.api.tree.AssignmentExpressionTree;
 import org.sonar.plugins.java.api.tree.ExpressionTree;
 import org.sonar.plugins.java.api.tree.IdentifierTree;
 import org.sonar.plugins.java.api.tree.Tree;
+import org.sonar.plugins.java.api.tree.VariableTree;
 
 import java.io.PrintStream;
 import java.util.Deque;
@@ -67,7 +68,9 @@ public class LiveVariables {
             if (lhs.is(Tree.Kind.IDENTIFIER)) {
               symbol = ((IdentifierTree) lhs).symbol();
               if (isLocalVariable(symbol)) {
-                assert !symbol.isUnknown();
+                if (symbol.isUnknown()) {
+                  throw new IllegalStateException("Local variable " + ((IdentifierTree) lhs).name() + " is unknown.");
+                }
                 assignmentLHS.add(lhs);
                 blockGen.remove(symbol);
                 blockKill.add(symbol);
@@ -78,11 +81,17 @@ public class LiveVariables {
             if (!assignmentLHS.contains(element)) {
               symbol = ((IdentifierTree) element).symbol();
               if (isLocalVariable(symbol)) {
-                assert !symbol.isUnknown();
+                if (symbol.isUnknown()) {
+                  throw new IllegalStateException("Local variable " + ((IdentifierTree) element).name() + " is unknown.");
+                }
                 blockGen.add(symbol);
               }
             }
             break;
+          case VARIABLE:
+            blockGen.remove(((VariableTree) element).symbol());
+            break;
+
         }
       }
       kill.put(block, blockKill);
@@ -100,11 +109,14 @@ public class LiveVariables {
         liveVariables.out.put(block, out);
       }
       for (CFG.Block successor : block.successors) {
-        out.addAll(liveVariables.in.get(successor));
+        Set<Symbol> inOfSuccessor = liveVariables.in.get(successor);
+        if (inOfSuccessor != null) {
+          out.addAll(inOfSuccessor);
+        }
       }
 
       // in = gen and (out - kill)
-      Set<Symbol>  newIn = new HashSet<>(gen.get(block));
+      Set<Symbol> newIn = new HashSet<>(gen.get(block));
       newIn.removeAll(Sets.difference(out, kill.get(block)));
 
       if (newIn.equals(liveVariables.in.get(block))) {
@@ -116,11 +128,18 @@ public class LiveVariables {
       }
     }
 
+    // in of first block and out of exit block are empty by definition.
+    if (!liveVariables.in.get(cfg.blocks.get(cfg.blocks.size() - 1)).isEmpty()) {
+      throw new IllegalStateException("In of first block should be empty");
+    }
+    if(!liveVariables.out.get(cfg.blocks.get(0)).isEmpty()) {
+      throw new IllegalStateException("Out of exit block should be empty");
+    }
     return liveVariables;
   }
 
   private static boolean isLocalVariable(Symbol symbol) {
-    return !symbol.owner().isTypeSymbol();
+    return symbol.owner().isMethodSymbol();
   }
 
   public void debugTo(PrintStream out) {

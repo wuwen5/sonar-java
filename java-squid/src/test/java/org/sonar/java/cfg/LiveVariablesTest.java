@@ -28,9 +28,12 @@ import org.sonar.plugins.java.api.tree.ClassTree;
 import org.sonar.plugins.java.api.tree.CompilationUnitTree;
 import org.sonar.plugins.java.api.tree.MethodTree;
 import org.sonar.plugins.java.api.tree.Tree;
+import org.sonar.sslr.tests.Assertions;
 
 import java.io.File;
 import java.util.Collections;
+
+import static org.fest.assertions.Assertions.assertThat;
 
 public class LiveVariablesTest {
 
@@ -44,13 +47,40 @@ public class LiveVariablesTest {
   }
 
   @Test
-  public void test() {
+  public void test_simple_live() {
     CFG cfg = buildCFG("void foo(int a) {  int i; /* should be live here */ if (false) ; foo(i); }");
-//    CFG cfg = buildCFG("void foo(int a) {  int i; /* should not be live here */ if (false) ; i = 0; }");
-//    CFG cfg = buildCFG("void foo(int a) { field = 0; /* fields should not be tracked */ if (false) ; foo(field); }");
-//    CFG cfg = buildCFG("void foo(int a) { a = 0; /* but arguments should be tracked */ if (false) ; foo(a); }");
+    LiveVariables liveVariables = LiveVariables.analyze(cfg);
+    assertThat(liveVariables.getOut(cfg.blocks.get(3))).hasSize(1);
+    assertThat(liveVariables.getOut(cfg.blocks.get(3)).iterator().next().name()).isEqualTo("i");
+  }
+
+  @Test
+  public void test_simple_death() throws Exception {
+    CFG cfg = buildCFG("void foo(int a) {  int i; /* should not be live here */ if (false) ; i = 0; }");
+    LiveVariables liveVariables = LiveVariables.analyze(cfg);
+    assertThat(liveVariables.getOut(cfg.blocks.get(3))).isEmpty();
+  }
+
+  @Test
+  public void test_field_not_tracked() throws Exception {
+    CFG cfg = buildCFG("void foo(int a) { field = 0; /* fields should not be tracked */ if (false) ; foo(field); }");
+    LiveVariables liveVariables = LiveVariables.analyze(cfg);
+    assertThat(liveVariables.getOut(cfg.blocks.get(3))).isEmpty();
+    cfg = buildCFG("void foo(int a) { a = 0; /* but arguments should be tracked */ if (false) ; foo(a); }");
+    liveVariables = LiveVariables.analyze(cfg);
+    assertThat(liveVariables.getOut(cfg.blocks.get(3))).hasSize(1);
+    assertThat(liveVariables.getOut(cfg.blocks.get(3)).iterator().next().name()).isEqualTo("a");
+  }
+
+  @Test
+  public void test_while_loop() throws Exception {
+    CFG cfg = buildCFG("void foo(boolean condition) { while (condition) { int x = 0; use(x); x = 1; /* x should not be live here*/}}");
     cfg.debugTo(System.out);
-    LiveVariables.analyze(cfg).debugTo(System.out);
+    LiveVariables liveVariables = LiveVariables.analyze(cfg);
+    liveVariables.debugTo(System.out);
+    assertThat(liveVariables.getOut(cfg.blocks.get(3))).isEmpty();
+    assertThat(liveVariables.getOut(cfg.blocks.get(4))).isEmpty();
+
   }
 
 }
