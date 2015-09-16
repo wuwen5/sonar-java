@@ -208,6 +208,13 @@ public class CFGTest {
   }
 
   @Test
+  public void test_multiple_constructions() {
+    CFG cfg = buildCFG("void fun(Object a) {if(a instanceof String) { a::toString;foo(y -> y+1); a += (String) a;  } }");
+    assertThat(cfg.blocks).hasSize(4);
+  }
+
+
+  @Test
   public void array_access_expression() throws Exception {
     CFG cfg = buildCFG("void fun(int[] array) { array[0] = 1; array[3+2] = 4; }");
     assertThat(cfg.blocks).hasSize(2);

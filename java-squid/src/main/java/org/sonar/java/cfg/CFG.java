@@ -24,6 +24,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.sonar.plugins.java.api.tree.ArrayAccessExpressionTree;
 import org.sonar.plugins.java.api.tree.ArrayDimensionTree;
+import org.sonar.plugins.java.api.tree.ArrayTypeTree;
 import org.sonar.plugins.java.api.tree.AssignmentExpressionTree;
 import org.sonar.plugins.java.api.tree.BinaryExpressionTree;
 import org.sonar.plugins.java.api.tree.BlockTree;
@@ -38,11 +39,16 @@ import org.sonar.plugins.java.api.tree.ForEachStatement;
 import org.sonar.plugins.java.api.tree.ForStatementTree;
 import org.sonar.plugins.java.api.tree.IdentifierTree;
 import org.sonar.plugins.java.api.tree.IfStatementTree;
+import org.sonar.plugins.java.api.tree.InstanceOfTree;
 import org.sonar.plugins.java.api.tree.LabeledStatementTree;
 import org.sonar.plugins.java.api.tree.LiteralTree;
 import org.sonar.plugins.java.api.tree.MemberSelectExpressionTree;
 import org.sonar.plugins.java.api.tree.MethodInvocationTree;
+import org.sonar.plugins.java.api.tree.MethodReferenceTree;
 import org.sonar.plugins.java.api.tree.MethodTree;
+import org.sonar.plugins.java.api.tree.NewArrayTree;
+import org.sonar.plugins.java.api.tree.NewClassTree;
+import org.sonar.plugins.java.api.tree.ParameterizedTypeTree;
 import org.sonar.plugins.java.api.tree.ParenthesizedTree;
 import org.sonar.plugins.java.api.tree.ReturnStatementTree;
 import org.sonar.plugins.java.api.tree.StatementTree;
@@ -51,12 +57,12 @@ import org.sonar.plugins.java.api.tree.SynchronizedStatementTree;
 import org.sonar.plugins.java.api.tree.ThrowStatementTree;
 import org.sonar.plugins.java.api.tree.Tree;
 import org.sonar.plugins.java.api.tree.TryStatementTree;
+import org.sonar.plugins.java.api.tree.TypeCastTree;
 import org.sonar.plugins.java.api.tree.UnaryExpressionTree;
 import org.sonar.plugins.java.api.tree.VariableTree;
 import org.sonar.plugins.java.api.tree.WhileStatementTree;
 
 import javax.annotation.Nullable;
-
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Deque;
@@ -256,6 +262,17 @@ public class CFG {
         build(binaryExpressionTree.leftOperand());
         break;
       case ASSIGNMENT:
+      case LEFT_SHIFT_ASSIGNMENT:
+      case RIGHT_SHIFT_ASSIGNMENT:
+      case AND_ASSIGNMENT:
+      case REMAINDER_ASSIGNMENT:
+      case UNSIGNED_RIGHT_SHIFT_ASSIGNMENT:
+      case OR_ASSIGNMENT:
+      case XOR_ASSIGNMENT:
+      case DIVIDE_ASSIGNMENT:
+      case MULTIPLY_ASSIGNMENT:
+      case PLUS_ASSIGNMENT:
+      case MINUS_ASSIGNMENT:
         AssignmentExpressionTree assignmentExpressionTree = (AssignmentExpressionTree) tree;
         currentBlock.elements.add(tree);
         build(assignmentExpressionTree.variable());
@@ -485,9 +502,32 @@ public class CFG {
       }
       case ARRAY_DIMENSION: {
         ArrayDimensionTree arrayDimensionTree = (ArrayDimensionTree) tree;
-        build(arrayDimensionTree.expression());
+        if(arrayDimensionTree.expression() != null) {
+          build(arrayDimensionTree.expression());
+        }
         break;
       }
+      case NEW_CLASS: {
+        NewClassTree newClassTree = (NewClassTree) tree;
+        currentBlock.elements.add(newClassTree);
+        if(newClassTree.classBody() != null) {
+          build(newClassTree.classBody());
+        }
+        build(newClassTree.identifier());
+        if(newClassTree.enclosingExpression() != null) {
+          build(newClassTree.enclosingExpression());
+        }
+        build(Lists.reverse(newClassTree.arguments()));
+      }
+      break;
+      case METHOD_REFERENCE:
+        MethodReferenceTree methodReferenceTree = (MethodReferenceTree) tree;
+        build(methodReferenceTree.method());
+        if(methodReferenceTree.typeArguments() != null) {
+          build(Lists.reverse(methodReferenceTree.typeArguments()));
+        }
+        build(methodReferenceTree.expression());
+        break;
       case IDENTIFIER:
       case INT_LITERAL:
       case LONG_LITERAL:
@@ -497,12 +537,61 @@ public class CFG {
       case STRING_LITERAL:
       case BOOLEAN_LITERAL:
       case NULL_LITERAL:
+      case PRIMITIVE_TYPE:
         currentBlock.elements.add(tree);
+        break;
+      case UNBOUNDED_WILDCARD:
+      case EXTENDS_WILDCARD:
+      case SUPER_WILDCARD:
+        //Ignore bounds in CFG
+        currentBlock.elements.add(tree);
+        break;
+      case TYPE_CAST:
+        currentBlock.elements.add(tree);
+        TypeCastTree typeCastTree = (TypeCastTree) tree;
+        build(typeCastTree.type());
+        build(typeCastTree.expression());
+        break;
+      case PARAMETERIZED_TYPE:
+        ParameterizedTypeTree parameterizedTypeTree = (ParameterizedTypeTree) tree;
+        currentBlock.elements.add(parameterizedTypeTree);
+        build(parameterizedTypeTree.type());
+        build(Lists.reverse(parameterizedTypeTree.typeArguments()));
+        break;
+      case INSTANCE_OF:
+        InstanceOfTree instanceOfTree = (InstanceOfTree) tree;
+        currentBlock.elements.add(instanceOfTree);
+        build(instanceOfTree.type());
+        build(instanceOfTree.expression());
+        break;
+      case EMPTY_STATEMENT:
+        break;
+      case COMPILATION_UNIT:
+        break;
+      case CLASS:
+      case INTERFACE:
+      case ENUM:
+      case ANNOTATION_TYPE:
+      case LAMBDA_EXPRESSION:
+        //Ignore declarations for now
+        currentBlock.elements.add(tree);
+        break;
+      case ARRAY_TYPE:
+        ArrayTypeTree arrayTypeTree = (ArrayTypeTree) tree;
+        currentBlock.elements.add(arrayTypeTree);
+        build(arrayTypeTree.type());
+        break;
+      case NEW_ARRAY:
+        NewArrayTree newArrayTree = (NewArrayTree) tree;
+        currentBlock.elements.add(tree);
+        if(newArrayTree.type() != null) {
+          build(newArrayTree.type());
+        }
+        build(Lists.reverse(newArrayTree.dimensions()));
+        build(Lists.reverse(newArrayTree.initializers()));
         break;
       default:
-        currentBlock.elements.add(tree);
-        break;
-        //throw new UnsupportedOperationException(tree.kind().name());
+        throw new UnsupportedOperationException(tree.kind().name());
     }
 
   }
